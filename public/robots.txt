@@ -1,0 +1,3 @@
+# Private app - no indexing
+User-agent: *
+Disallow: /
