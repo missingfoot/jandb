@@ -1,4 +1,6 @@
 import type { MessageWithFile } from '@/types';
+import { LinkCard } from '@/components/chat/LinkCard';
+import { isImageFile } from '@/utils/files';
 
 interface LinksViewProps {
   messages: MessageWithFile[];
@@ -18,35 +20,29 @@ export function LinksView({ messages, accentColor = '#0d6efd' }: LinksViewProps)
 
   return (
     <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20">
-      <div className="space-y-3">
-        {messagesWithLinks.map((message) => (
-          <div
-            key={message.id}
-            className="p-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-lg hover:bg-[rgba(255,255,255,0.08)] transition-colors"
-          >
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white break-words mb-1">{message.text}</p>
-                <p className="text-xs text-neutral-400">
-                  Shared by {message.sender} •{' '}
-                  {new Date(message.createdAt).toLocaleDateString()}
-                </p>
-              </div>
+      <div className="space-y-4">
+        {messagesWithLinks.map((message) => {
+          const linkImage =
+            message.$file && isImageFile(message.$file.path)
+              ? message.$file.url
+              : undefined;
+
+          return (
+            <div key={message.id}>
+              <p className="text-xs text-neutral-400 mb-2">
+                Shared by {message.sender} •{' '}
+                {new Date(message.createdAt).toLocaleDateString()}
+              </p>
+              <LinkCard
+                url={message.link!}
+                title={message.text || undefined}
+                imageUrl={linkImage}
+                isOwn={false}
+                accentColor={accentColor}
+              />
             </div>
-            <a
-              href={message.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-3 py-1.5 rounded-lg text-xs font-medium transition-colors mt-2"
-              style={{
-                backgroundColor: accentColor,
-                color: 'white',
-              }}
-            >
-              Open Link
-            </a>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

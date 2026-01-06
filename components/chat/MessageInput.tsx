@@ -1,22 +1,26 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from 'react';
 import type { NavigationLayout } from '@/hooks/useUserPreferences';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { FilePreview } from '@/components/shared/FilePreview';
+import { LinkPreview } from './LinkPreview';
 import { SendIcon, EmojiIcon, EmojiIconActive } from '@/components/shared/Icons';
 import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface MessageInputProps {
-  onSendMessage: (text: string, file?: File) => void;
+  onSendMessage: (text: string, file?: File, link?: string) => void;
   disabled?: boolean;
   accentColor?: string;
   navigationLayout?: NavigationLayout;
 }
 
+const URL_REGEX = /(https?:\/\/[^\s]+)/;
+
 export function MessageInput({ onSendMessage, disabled, accentColor = '#0d6efd', navigationLayout = 'top' }: MessageInputProps) {
   const [text, setText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const { selectedFile, error, handleFileSelect, clearFile } = useFileUpload();
@@ -66,13 +70,30 @@ export function MessageInput({ onSendMessage, disabled, accentColor = '#0d6efd',
     }, 0);
   };
 
+  const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    const urlMatch = pastedText.match(URL_REGEX);
+
+    // If pasting a URL and not already in link mode, activate link mode
+    if (urlMatch && !detectedUrl) {
+      e.preventDefault();
+      setDetectedUrl(urlMatch[0]);
+      setText(''); // Clear for title input
+    }
+  };
+
+  const handleDismissLink = () => {
+    setDetectedUrl(null);
+  };
+
   const handleSend = () => {
     const trimmedText = text.trim();
-    if (!trimmedText && !selectedFile) return;
+    if (!trimmedText && !selectedFile && !detectedUrl) return;
 
-    onSendMessage(trimmedText, selectedFile?.file);
+    onSendMessage(trimmedText, selectedFile?.file, detectedUrl || undefined);
     setText('');
     clearFile();
+    setDetectedUrl(null);
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -89,6 +110,17 @@ export function MessageInput({ onSendMessage, disabled, accentColor = '#0d6efd',
 
   return (
     <div className={`py-2 pr-3 bg-[#141414] ${navigationLayout === 'side' ? 'pl-6' : 'pl-3'}`}>
+      {/* Link preview */}
+      {detectedUrl && (
+        <div className="mb-3">
+          <LinkPreview
+            url={detectedUrl}
+            onDismiss={handleDismissLink}
+            accentColor={accentColor}
+          />
+        </div>
+      )}
+
       {/* File preview */}
       {selectedFile && (
         <div className="mb-3">
@@ -145,7 +177,8 @@ export function MessageInput({ onSendMessage, disabled, accentColor = '#0d6efd',
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          onPaste={handlePaste}
+          placeholder={detectedUrl ? "Type a title for this link..." : "Type a message..."}
           disabled={disabled}
           rows={1}
           className="flex-1 py-2 text-white placeholder-gray-400 resize-none focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors overflow-hidden"
@@ -158,7 +191,7 @@ export function MessageInput({ onSendMessage, disabled, accentColor = '#0d6efd',
         <button
           type="button"
           onClick={handleSend}
-          disabled={disabled || (!text.trim() && !selectedFile)}
+          disabled={disabled || (!text.trim() && !selectedFile && !detectedUrl)}
           className="p-2 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: accentColor,

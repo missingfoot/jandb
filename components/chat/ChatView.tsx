@@ -8,7 +8,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 interface ChatViewProps {
   messages: MessageWithFile[];
   currentUser: string;
-  onSendMessage: (text: string, file?: File) => void;
+  onSendMessage: (text: string, file?: File, link?: string) => void;
   isLoading?: boolean;
   accentColor?: string;
   navigationLayout?: NavigationLayout;

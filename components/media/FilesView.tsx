@@ -1,5 +1,6 @@
 import type { MessageWithFile } from '@/types';
 import { getCleanFileName, isImageFile } from '@/utils/files';
+import { downloadFile } from '@/utils/download';
 import { FileIcon } from '@/components/shared/Icons';
 
 interface FilesViewProps {
@@ -25,13 +26,16 @@ export function FilesView({ messages, accentColor = '#0d6efd' }: FilesViewProps)
       <div className="space-y-3">
         {fileMessages.map((message) => {
           const file = message.$file!;
+          const fileName = getCleanFileName(file.path);
           return (
             <a
               key={message.id}
               href={file.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 p-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-lg hover:bg-[rgba(255,255,255,0.08)] transition-colors group"
+              onClick={(e) => {
+                e.preventDefault();
+                downloadFile(file.url, fileName);
+              }}
+              className="flex items-center gap-3 p-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-lg hover:bg-[rgba(255,255,255,0.08)] transition-colors group cursor-pointer"
             >
               <div
                 className="w-10 h-10 flex items-center justify-center rounded flex-shrink-0"
@@ -41,7 +45,7 @@ export function FilesView({ messages, accentColor = '#0d6efd' }: FilesViewProps)
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate group-hover:text-opacity-90">
-                  {getCleanFileName(file.path)}
+                  {fileName}
                 </p>
                 {message.text && (
                   <p className="text-xs text-neutral-400 truncate mt-0.5">{message.text}</p>

@@ -112,15 +112,14 @@ export default function Home() {
     }
   };
 
-  const handleSendMessage = async (text: string, file?: File) => {
+  const handleSendMessage = async (text: string, file?: File, link?: string) => {
     if (!userName) return;
 
     const messageId = id();
     const txs = [];
 
-    // Extract first link from text
-    const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
-    const link = urlMatch ? urlMatch[0] : undefined;
+    // Use provided link, or extract from text as fallback (backward compatibility)
+    const messageLink = link || text.match(/(https?:\/\/[^\s]+)/)?.[0];
 
     // Upload file if present
     let fileId: string | undefined;
@@ -144,7 +143,7 @@ export default function Home() {
     txs.push(
       tx.messages[messageId].update({
         text: text || '',
-        link,
+        link: messageLink,
         sender: userName,
         createdAt: Date.now(),
       })
